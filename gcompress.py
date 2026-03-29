@@ -292,8 +292,7 @@ class GCompressWindow(Gtk.ApplicationWindow):
         self.compress_button.set_sensitive(True)
         self.file_button.set_sensitive(True)
         self.quality_scale.set_sensitive(True)
-        self.lang_dropdown.set_sensitive(True) # Odblokowanie wyboru języka
-        
+        self.lang_dropdown.set_sensitive(True) 
         self.status_state = final_state
         if success:
             self.progress_bar.set_fraction(1.0)
