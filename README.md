@@ -23,7 +23,7 @@ You can run the application directly using Python.
 
 1. Clone the repository:
    ```bash
-   git clone [https://github.com/your-username/gcompress.git](https://github.com/your-username/gcompress.git)
+   git clone https://github.com/Jakub-Chrzanowski/gcompress.git
    cd gcompress
    ```
 
