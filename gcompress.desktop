@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=GCompress
+GenericName=Kompresor wideo i obrazów
+Comment=Szybka kompresja filmów i zdjęć za pomocą FFmpeg
+Exec=gcompress
+Icon=gcompress
+Terminal=false
+Type=Application
+Categories=AudioVideo;Video;Graphics;Utility;GTK;
+StartupWMClass=com.github.gcompress
