@@ -35,33 +35,33 @@ You can run the application directly using Python.
 > [!NOTE]
 > GCompress will save the output file in the same directory as the original file, appending `_compressed` to the filename. Your original files are never overwritten.
 
-## Building a Standalone Executable (Linux)
+## Packaging for Arch Linux (PKGBUILD)
 
-If you prefer to compile the application into a single executable using PyInstaller, you must set up your virtual environment correctly to allow access to system-level GTK bindings.
+On Arch-based systems (Arch, Manjaro, EndeavourOS), the native way to install GCompress as a proper application — with an entry in your application menu, an icon, and clean removal via `pacman` — is to build it from the `PKGBUILD` included in this repository, instead of using PyInstaller.
 
-> [!IMPORTANT]  
-> Standard Python virtual environments (`python3 -m venv .venv`) isolate the environment from system packages. Since the `gi` (PyGObject) module relies heavily on system-level C libraries (GTK4), your virtual environment **must** inherit system packages.
+### 1. Prerequisites
 
-1. Create a virtual environment with system site packages enabled:
-   ```bash
-   python3 -m venv --system-site-packages .venv
-   source .venv/bin/activate
-   ```
+```bash
+sudo pacman -S --needed base-devel
+```
 
-2. Install PyInstaller:
-   ```bash
-   pip install pyinstaller
-   ```
+(`base-devel` provides `makepkg` and other build tools; it's usually only needed once.)
 
-3. Build the executable:
-   ```bash
-   pyinstaller --onefile --windowed gcompress.py
-   ```
+### 2. Build and install
 
-4. Find your executable in the generated `dist/` directory.
+From the repository root (where `PKGBUILD`, `gcompress.desktop` and `gcompress.svg` are located):
 
-> [!WARNING]  
-> Packaging GTK applications with PyInstaller on Linux can sometimes cause issues with missing system icons, themes, or typelibs on target machines that do not have GTK4 installed. For the best native Linux experience, it is highly recommended to distribute the `.py` script alongside a `.desktop` file instead of using PyInstaller.
+```bash
+makepkg -si
+```
+
+This builds the package and installs it with `pacman` (you'll be prompted for your `sudo` password). GCompress will then show up in your application menu like any other installed program, and can also be run from a terminal with `gcompress`.
+
+### 3. Uninstalling
+
+```bash
+sudo pacman -R gcompress
+```
 
 ## License
 
