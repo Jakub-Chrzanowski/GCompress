@@ -29,7 +29,7 @@ You can run the application directly using Python.
 
 2. Execute the script:
    ```bash
-   python3 gcompress.py
+   python3 gcompress
    ```
 
 > [!NOTE]
