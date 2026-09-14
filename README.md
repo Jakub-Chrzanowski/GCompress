@@ -37,7 +37,7 @@ You can run the application directly using Python.
 
 ## Packaging for Arch Linux (PKGBUILD)
 
-On Arch-based systems (Arch, Manjaro, EndeavourOS), the native way to install GCompress as a proper application — with an entry in your application menu, an icon, and clean removal via `pacman` — is to build it from the `PKGBUILD` included in this repository, instead of using PyInstaller.
+On Arch-based systems (Arch, Manjaro, EndeavourOS), the native way to install GCompress as a proper application - with an entry in your application menu, an icon, and clean removal via `pacman` - is to build it from the `PKGBUILD` included in this repository, instead of using PyInstaller.
 
 ### 1. Prerequisites
 
