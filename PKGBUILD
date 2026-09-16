@@ -1,4 +1,3 @@
-# Maintainer: (lokalna paczka, budowana samodzielnie przez użytkownika)
 pkgname=gcompress
 pkgver=1.0.0
 pkgrel=1
