@@ -8,6 +8,35 @@ import sys
 gi.require_version('Gtk', '4.0')
 from gi.repository import Gtk, GLib
 
+IS_WINDOWS = sys.platform == "win32"
+
+# On Windows, calling a console program (ffmpeg/ffprobe) from a windowed
+# (no-console) GUI app would otherwise flash a black console window.
+SUBPROCESS_FLAGS = subprocess.CREATE_NO_WINDOW if IS_WINDOWS else 0
+
+
+def _app_dir():
+    """Directory the app is running from, whether run as a script or as a
+    PyInstaller-frozen executable (onefile or onedir)."""
+    if getattr(sys, "frozen", False):
+        return os.path.dirname(sys.executable)
+    return os.path.dirname(os.path.abspath(__file__))
+
+
+def _find_tool(name):
+    """Prefer an ffmpeg/ffprobe binary bundled next to the app (how the
+    Windows build ships them) and fall back to PATH (how Linux/macOS
+    normally provide them via the system package manager)."""
+    exe_name = f"{name}.exe" if IS_WINDOWS else name
+    bundled = os.path.join(_app_dir(), exe_name)
+    if os.path.isfile(bundled):
+        return bundled
+    return exe_name
+
+
+FFMPEG_BIN = _find_tool("ffmpeg")
+FFPROBE_BIN = _find_tool("ffprobe")
+
 
 TRANSLATIONS = {
     "en": {
@@ -230,8 +259,11 @@ class GCompressWindow(Gtk.ApplicationWindow):
 
     def get_duration(self, input_file):
         try:
-            cmd = ['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', input_file]
-            output = subprocess.check_output(cmd, text=True).strip()
+            cmd = [FFPROBE_BIN, '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', input_file]
+            output = subprocess.check_output(
+                cmd, text=True, encoding='utf-8', errors='replace',
+                creationflags=SUBPROCESS_FLAGS
+            ).strip()
             return float(output)
         except Exception:
             return 0.0
@@ -252,14 +284,18 @@ class GCompressWindow(Gtk.ApplicationWindow):
         try:
             if is_video:
                 crf = int(35 - ((quality_val - 1) / 99) * 17)
-                cmd = ['ffmpeg', '-y', '-i', input_file, '-vcodec', 'libx264', '-crf', str(crf), '-preset', 'fast', '-progress', 'pipe:1', output_file]
+                cmd = [FFMPEG_BIN, '-y', '-i', input_file, '-vcodec', 'libx264', '-crf', str(crf), '-preset', 'fast', '-progress', 'pipe:1', output_file]
             else:
                 qv = int(15 - ((quality_val - 1) / 99) * 13)
-                cmd = ['ffmpeg', '-y', '-i', input_file, '-q:v', str(qv), output_file]
-            
+                cmd = [FFMPEG_BIN, '-y', '-i', input_file, '-q:v', str(qv), output_file]
+
             GLib.idle_add(self.update_status_state, "compressing")
 
-            self.process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+            self.process = subprocess.Popen(
+                cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                text=True, encoding='utf-8', errors='replace',
+                creationflags=SUBPROCESS_FLAGS
+            )
 
             for line in self.process.stdout:
                 if is_video and duration > 0 and "out_time_ms=" in line:

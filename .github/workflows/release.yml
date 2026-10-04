@@ -1,0 +1,124 @@
+name: Build release packages
+
+# Builds a Windows .exe (zipped, with ffmpeg bundled) and an Arch Linux
+# pacman package, then attaches both to the GitHub Release for the pushed
+# tag. Push a tag like "v1.0.1" to cut a real release; use the manual
+# "Run workflow" button (workflow_dispatch) to just test the builds - in
+# that case the two files are only kept as workflow artifacts, nothing is
+# published.
+#
+# The Arch job is plain pacman/makepkg in the official archlinux container
+# and is solid. The Windows job packages a GTK4 Python app via MSYS2 +
+# PyInstaller, which is the standard approach for this but has more moving
+# parts (GTK4's own runtime data has to be collected by hand) - if a
+# release build ever misbehaves on Windows while `gcompress` itself still
+# works from an MSYS2 shell, start by looking here.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            zip
+            unzip
+            curl
+            mingw-w64-x86_64-python
+            mingw-w64-x86_64-python-gobject
+            mingw-w64-x86_64-gtk4
+            mingw-w64-x86_64-python-pip
+
+      - name: Install PyInstaller
+        run: pip install --upgrade pyinstaller
+
+      - name: Download a static ffmpeg build for Windows
+        run: |
+          curl -L -o ffmpeg.zip "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip"
+          unzip -q -o ffmpeg.zip -d ffmpeg_extracted
+          ff_dir=$(find ffmpeg_extracted -maxdepth 1 -type d -name "ffmpeg-*")
+          cp "$ff_dir/bin/ffmpeg.exe" .
+          cp "$ff_dir/bin/ffprobe.exe" .
+
+      - name: Build with PyInstaller
+        run: |
+          cp gcompress gcompress.py
+          pyinstaller gcompress-windows.spec
+
+      - name: Assemble release folder
+        run: |
+          mkdir -p release/GCompress
+          cp dist/gcompress.exe release/GCompress/
+          cp ffmpeg.exe ffprobe.exe release/GCompress/
+          cp license.txt release/GCompress/LICENSE.txt
+          cd release
+          zip -r ../GCompress-windows-x64.zip GCompress
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: GCompress-windows-x64
+          path: GCompress-windows-x64.zip
+
+  build-arch-pkg:
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - name: Install build and runtime dependencies
+        run: |
+          pacman -Syu --noconfirm
+          pacman -S --noconfirm --needed base-devel git python python-gobject gtk4 ffmpeg
+
+      - uses: actions/checkout@v4
+
+      - name: Sync pkgver with the pushed tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          tag_version="${GITHUB_REF_NAME#v}"
+          sed -i "s/^pkgver=.*/pkgver=${tag_version}/" PKGBUILD
+          sed -i "s/^pkgrel=.*/pkgrel=1/" PKGBUILD
+
+      - name: Build package
+        # makepkg refuses to run as root, so build as an unprivileged user.
+        # Runtime deps are already installed above, so plain makepkg
+        # (no -s) is enough - it only needs to run gcc/strip/etc as builder.
+        run: |
+          useradd -m builder
+          chown -R builder:builder .
+          su builder -c "makepkg --noconfirm"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gcompress-arch-pkg
+          path: "*.pkg.tar.zst"
+
+  publish-release:
+    needs: [build-windows, build-arch-pkg]
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Publish to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          files: |
+            artifacts/GCompress-windows-x64/GCompress-windows-x64.zip
+            artifacts/gcompress-arch-pkg/*.pkg.tar.zst
