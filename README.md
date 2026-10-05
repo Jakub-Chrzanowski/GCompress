@@ -1,6 +1,6 @@
 # GCompress
 
-GCompress is a modern, lightweight GUI application built with Python and GTK4 that simplifies the process of compressing videos and images. It acts as a user-friendly frontend for FFmpeg, allowing you to easily reduce file sizes without memorizing complex command-line arguments. It runs on both Linux and Windows.
+GCompress is a modern, lightweight GUI application built with help of AI help using Python and GTK4 that simplifies the process of compressing videos and images. It acts as a user-friendly frontend for FFmpeg, allowing you to easily reduce file sizes without memorizing complex command-line arguments. It runs on both Linux and Windows.
 
 ## Download
 
