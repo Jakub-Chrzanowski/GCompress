@@ -111,15 +111,6 @@ The [automated workflow](#releases-are-automated) does this for every release, b
 > [!NOTE]
 > `gcompress-windows.spec` bundles GTK4's own runtime data (typelibs, icon theme, GSettings schemas, gdk-pixbuf loaders) from the MSYS2 MINGW64 prefix, which plain PyInstaller hooks don't pick up on their own. If a build ever starts and then fails to show its window or load icons, that's the first place to check.
 
-## Releases are automated
-
-Pushing a tag like `v1.0.1` triggers [`.github/workflows/release.yml`](.github/workflows/release.yml), which:
-
-1. Builds `GCompress-windows-x64.zip` on `windows-latest` via MSYS2 + PyInstaller, with FFmpeg bundled in.
-2. Builds the Arch package from `PKGBUILD` inside an official `archlinux` container (plain `pacman`/`makepkg`, no cross-compilation involved), syncing `pkgver` to the tag automatically.
-3. Attaches both files to the GitHub Release for that tag.
-
-You can also trigger it manually from the **Actions** tab (`Run workflow`) to test a build without cutting a release - in that case the two files are only kept as downloadable workflow artifacts.
 
 ## License
 
